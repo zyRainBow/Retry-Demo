@@ -1,3 +1,4 @@
+//方法一：
 private OpenRetryMessageRunnable m_ScouterOff = new OpenRetryMessageRunnable("ADAS_24_T1", 5 * 60 * 1000, 6);
 
 private void openRetryMessage(OpenRetryMessageRunnable runnable) {
@@ -69,3 +70,49 @@ private class OpenRetryMessageRunnable implements Runnable {
 			}
 		}
 }
+
+//方法二：
+private int count = 0;
+    private Timer m_timer = null;
+    private TimerTask m_task = null;
+    //retry 3次，每次间隔8s
+    private void startTimer(){
+        m_timer = new Timer();
+        m_task = new TimerTask() {
+            @Override
+            public void run() {
+                if(isUpdating()){
+                   ++count;
+                   if(count == 3){
+                       Log.d(TAG, "startTimer >>> count=3!" );
+                       //do something
+                       removeTimer();
+                   }
+                }else{
+                    if(OPEN_MESSAGE_SUCCESS == openMessage("message")){
+                        Log.d(TAG, "startTimer >>> message has opened!" );
+                    }
+                    removeTimer();
+                }
+            }
+        };
+        if (m_task != null && m_timer != null) {
+            m_timer.schedule(m_task, 8000, 8000);
+        }
+    }
+
+    private void removeTimer(){
+        if (m_task != null) {
+            m_task.cancel();
+            m_task = null;
+        }
+        if (m_timer != null) {
+            m_timer.cancel();
+            m_timer = null;
+        }
+        if(count != 0){
+            count = 0;
+        }
+    }
+
+    //使用此retry时，只需调用startTimer()即可
